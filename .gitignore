@@ -34,3 +34,7 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+*.ldb
+*.mdb
+.idea/
+*.bak
