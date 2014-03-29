@@ -38,6 +38,12 @@ def tables(mdb):
     for table_name in db.get_table_names():
         print(table_name)
 
+@begin.subcommand
+def columns(mdb):
+    """Show column names."""
+    db = msaccess.MsAccessDb(mdb)
+    for table_name, field_name in db.get_table_and_field_names():
+        print( "/".join([table_name,field_name]))
 
 @begin.start
 def run():

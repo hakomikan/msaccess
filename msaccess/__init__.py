@@ -127,18 +127,19 @@ class MsAccessDb:
                 raise
             qry.MoveNext()
 
+
     @com_exception_print
-    def OpenSchema(self):
+    def open_schema(self):
         return self.con.OpenSchema(20)
 
     @com_exception_print
-    def OpenColumns(self, tableName):
+    def open_columns(self, tableName):
         return self.con.OpenSchema(4, [None, None, tableName])
 
     @com_exception_print
     def get_schema_names(self, schemaType):
         ret = []
-        schemas = self.OpenSchema()
+        schemas = self.open_schema()
         while not schemas.EOF:
             fields = schemas.Fields
             # print fields.Item("TABLE_TYPE").Value, fields.Item("TABLE_NAME").Value
@@ -150,6 +151,16 @@ class MsAccessDb:
     @com_exception_print
     def get_table_names(self):
         return self.get_schema_names("TABLE")
+
+    @com_exception_print
+    def get_field_names(self, queryName):
+        return [field.Item("COLUMN_NAME").Value for field in self.GetSchemaColumns(queryName)]
+
+    @com_exception_print
+    def get_table_and_field_names(self):
+        for table_name in self.get_table_names():
+            for field_name in self.get_field_names(table_name):
+                yield (table_name, field_name)
 
     @com_exception_print
     def GetProcedureNames(self):
@@ -183,11 +194,6 @@ class MsAccessDb:
         else:
             raise Exception("not found QueryDefinitionObject: %s" % name)
 
-    @com_exception_print
-    def GetFieldNames(self, queryName):
-        recordSet = self.GetQueryDefinitionObject(queryName).Command.execute_query()[0]
-        fields = ConvertFromAdoList(recordSet.Fields)
-        return [field.Name for field in fields]
 
     @com_exception_print
     def PrintFields(self, fields):
@@ -201,7 +207,7 @@ class MsAccessDb:
             ADO の OpenSchema とSchemaEnum を参照
             http://msdn.microsoft.com/ja-jp/library/cc389872
         """
-        schemas = self.OpenColumns(tableName)
+        schemas = self.open_columns(tableName)
         while not schemas.EOF:
             fields = schemas.Fields
             yield fields
