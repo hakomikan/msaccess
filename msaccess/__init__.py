@@ -95,14 +95,13 @@ class MsAccessDb:
     def convert_pytime_to_datetime(cls, pytime):
         import datetime
 
-        return datetime.datetime(pytime.year, pytime.month, pytime.day, pytime.hour, pytime.minute, pytime.second,
-                                 pytime.msec)
+        return datetime.datetime(pytime.year, pytime.month, pytime.day, pytime.hour, pytime.minute, pytime.second)
 
     @classmethod
     def regulate_value(cls, value):
         """PyTimeとかを普通のdatetimeとかに直しておく"""
         try:
-            if str(type(value)) == "<type 'time'>":
+            if "datetime" in str(type(value)):
                 return cls.convert_pytime_to_datetime(value)
             elif "Decimal" in str(type(value)):
                 return float(value)
@@ -113,20 +112,27 @@ class MsAccessDb:
         except:
             raise
 
+    @classmethod
+    def regulate_value_for_mongodb(cls, value):
+        if isinstance(value, datetime.datetime) and False:
+            return "ISODate({0})".format(value.isoformat())
+        else:
+            return value
+
     @com_exception_print
     def execute_query(self, query):
-        return self.con.ExecuteQuery(query)[0]
+        return self.con.Execute(query.encode("cp932"))[0]
 
     def iterate_query(self, query):
-        qry = self.execute_query("Select * From (%s);" % query)
+        qry = self.execute_query("Select * From %s;" % query)
         while not qry.EOF:
             try:
                 yield [MsAccessDb.regulate_value(y.Value) for y in qry.Fields]
-            except:
+            except Exception as e:
                 print("convert error '%s' in '%s'" % ([y.Value for y in qry.Fields], query), file=sys.stderr)
+                print(str(e), file=sys.stderr)
                 raise
             qry.MoveNext()
-
 
     @com_exception_print
     def open_schema(self):
@@ -154,7 +160,9 @@ class MsAccessDb:
 
     @com_exception_print
     def get_field_names(self, queryName):
-        return [field.Item("COLUMN_NAME").Value for field in self.GetSchemaColumns(queryName)]
+        field_list = [ (field.Item("ORDINAL_POSITION").Value, field.Item("COLUMN_NAME").Value) for field in self.GetSchemaColumns(queryName)]
+        field_list.sort()
+        return [ field_name for order, field_name in field_list ]
 
     @com_exception_print
     def get_table_and_field_names(self):
