@@ -1,5 +1,5 @@
 from unittest import TestCase
-from scripts.msaccess_export import tables, columns, dump_mongodb_json, export_mongodb
+from scripts.msaccess_export import tables, columns, dump_mongodb_json, export_mongodb, export_schema
 
 
 class TestMsAccessExport(TestCase):
@@ -14,3 +14,6 @@ class TestMsAccessExport(TestCase):
 
     def test_export_mongodb(self):
         export_mongodb("kusado", "test_data.mdb", "translation_words.yaml")
+
+    def test_export_schema(self):
+        export_schema("-", "test_data.mdb", "translation_words.yaml")

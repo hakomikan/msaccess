@@ -40,8 +40,7 @@ def dump_yaml(filename, data):
         yaml.safe_dump(
             data,
             allow_unicode=True,
-            default_flow_style=False,
-            encoding=OUTPUT_ENCODING))
+            default_flow_style=False))
 
 
 def read_list(filename):
@@ -146,6 +145,32 @@ def export_mongodb(output, mdb, translation_words=None):
             for fields in db.iterate_query(table_name):
                 fields = [msaccess.MsAccessDb.regulate_value_for_mongodb(field) for field in fields]
                 collection.insert(translate_mongo_document(table_name, dict(zip(field_names, fields)), translation_dict))
+
+
+@begin.subcommand
+def export_schema(output, mdb, translation_words=None):
+    """export schema by yaml
+    """
+    db = msaccess.MsAccessDb(mdb)
+    db_data = dict()
+
+    if translation_words:
+        translation_dict = read_yaml(translation_words)
+    else:
+        translation_dict = defaultdict(lambda x: x)
+
+    ret = {}
+
+    for table_name in db.get_table_names():
+        translated_table_name = translation_dict[table_name]
+
+        ret[translated_table_name] = {}
+
+        fields = db.get_field_attributes(table_name)
+        for field in fields:
+            translated_field_name = translate_database_entry(table_name, field["COLUMN_NAME"], translation_dict)
+            ret[translated_table_name][translated_field_name] = field
+    dump_yaml(output, ret)
 
 
 @begin.start

@@ -165,6 +165,11 @@ class MsAccessDb:
         return [ field_name for order, field_name in field_list ]
 
     @com_exception_print
+    def get_field_attributes(self, queryName):
+        field_list = [ dict([ (field(i).Name, field(i).Value) for i in range(field.Count) ]) for field in self.GetSchemaColumns(queryName)]
+        return field_list
+
+    @com_exception_print
     def get_table_and_field_names(self):
         for table_name in self.get_table_names():
             for field_name in self.get_field_names(table_name):
