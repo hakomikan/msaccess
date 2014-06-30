@@ -166,10 +166,16 @@ def export_schema(output, mdb, translation_words=None):
 
         ret[translated_table_name] = {}
 
+        current_table = ret[translated_table_name]
+        current_table["OriginalTableName"] = table_name
+        current_table["Members"] = {}
+
         fields = db.get_field_attributes(table_name)
         for field in fields:
             translated_field_name = translate_database_entry(table_name, field["COLUMN_NAME"], translation_dict)
-            ret[translated_table_name][translated_field_name] = field
+            field["DATA_TYPE_NAME"] = msaccess.typeNames[field["DATA_TYPE"]]
+            field["ORIGINAL_NAME"] = field["COLUMN_NAME"]
+            current_table["Members"][translated_field_name] = field
     dump_yaml(output, ret)
 
 
