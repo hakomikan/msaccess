@@ -77,6 +77,8 @@ typeNames = {
 SchemaTypes = Enum("SchemaTypes", "TABLE")
 
 class MsAccessDb:
+    types = set()
+    
     @com_exception_print
     def __init__(self, db_name):
         connection_string = (
@@ -114,8 +116,18 @@ class MsAccessDb:
 
     @classmethod
     def regulate_value_for_mongodb(cls, value):
+        type_name = str(type(value))
+        if type_name not in cls.types:
+            cls.types = cls.types | set([type_name])
+            print("type: {0}".format(str(type(value))))
+            import sys
+            sys.stdout.flush()
+
+        
         if isinstance(value, datetime.datetime) and False:
             return "ISODate({0})".format(value.isoformat())
+        elif "Decimal" in str(type(value)):
+            return float(value)
         else:
             return value
 

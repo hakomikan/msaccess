@@ -139,12 +139,16 @@ def export_mongodb(output, mdb, translation_words=None):
             translation_dict = defaultdict(lambda x: x)
 
         for table_name in db.get_table_names():
-            collection = mongodb[translation_dict[table_name]]
+            translated_table_name = translation_dict[table_name]
+            collection = mongodb[translated_table_name]
             field_names = [field_name for field_name in db.get_field_names(table_name)]
+            print("exporting {0}...", translated_table_name)
+            sys.stdout.flush()
 
             for fields in db.iterate_query(table_name):
                 fields = [msaccess.MsAccessDb.regulate_value_for_mongodb(field) for field in fields]
                 collection.insert(translate_mongo_document(table_name, dict(zip(field_names, fields)), translation_dict))
+                break
 
 
 @begin.subcommand
