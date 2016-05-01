@@ -171,7 +171,7 @@ class JsonSchemaConverterFromAccessSchema:
         return ret
 
 @begin.subcommand
-def json_schema(schema_file, output="-"):
+def json_schema(schema_file=None, output="-"):
     """Export json schemas from access schemas"""
     schemas = read_yaml(schema_file)
     dump_yaml(output, JsonSchemaConverterFromAccessSchema.convert_schemas(schemas))

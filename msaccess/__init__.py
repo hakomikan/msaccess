@@ -119,7 +119,7 @@ class MsAccessDb:
         type_name = str(type(value))
         if type_name not in cls.types:
             cls.types = cls.types | set([type_name])
-            print("type: {0}".format(str(type(value))))
+            #print("type: {0}".format(str(type(value))))
             import sys
             sys.stdout.flush()
 

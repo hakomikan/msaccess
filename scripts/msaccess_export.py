@@ -94,15 +94,72 @@ def translate_database(db, translation_dict):
         ret[translated_table] = table_data
     return ret
 
-
 @begin.subcommand
-def dump_mongodb_json(output, mdb, translation_words=None):
+def list_tables(mdb=None, translation_words=None):
     """Dump database as json.
     """
     db = msaccess.MsAccessDb(mdb)
     db_data = dict()
 
+    translation_dict = {}
+    if translation_words:
+        translation_dict = read_yaml(translation_words)
+
     for table_name in db.get_table_names():
+        print("{0}: {1}".format(translation_dict[table_name], table_name))
+
+@begin.subcommand
+def dump_table(table_name=None, output="-", mdb=None, translation_words=None):
+    """Dump a table as json.
+    """
+    db = msaccess.MsAccessDb(mdb)
+    db_data = dict()
+
+    translation_dict = {}
+    if translation_words:
+        translation_dict = read_yaml(translation_words)
+
+    original_table_names = [t_name for t_name in db.get_table_names() if translation_dict[t_name] == table_name ]
+    
+    if len(original_table_names) != 1:
+        raise Exception("not found table: {0}".format(table_name))
+    
+    original_table_name = original_table_names[0]
+
+    db_data = dict()
+    table_data = []
+
+    print("extract {0}".format(table_name))
+    field_names = [field_name for field_name in db.get_field_names(original_table_name)]
+    for fields in db.iterate_query(original_table_name):
+        fields = [msaccess.MsAccessDb.regulate_value_for_mongodb(field) for field in fields]
+        table_data.append(dict(zip(field_names, fields)))
+        
+    db_data[original_table_name] = table_data
+
+    print("translate...")
+    db_data = translate_database(db_data, translation_dict)
+    table_data = db_data[table_name]
+
+    print("write out...")
+    with open_output_stream(output) as of:
+        for document in table_data:
+            print(bson.json_util.dumps(document), file=of)
+        
+@begin.subcommand
+def dump_mongodb_json(output=None, mdb=None, translation_words=None):
+    """Dump database as json.
+    """
+    db = msaccess.MsAccessDb(mdb)
+    db_data = dict()
+
+    translation_dict = {}
+    if translation_words:
+        translation_dict = read_yaml(translation_words)
+
+    for table_name in db.get_table_names():
+        print("extract {0}...".format(translation_dict[table_name]))
+        
         table_data = []
 
         field_names = [field_name for field_name in db.get_field_names(table_name)]
@@ -111,14 +168,13 @@ def dump_mongodb_json(output, mdb, translation_words=None):
             table_data.append(dict(zip(field_names, fields)))
         db_data[table_name] = table_data
 
-    translation_dict = {}
-    if translation_words:
-        translation_dict = read_yaml(translation_words)
+    print("translate...")
+
     db_data = translate_database(db_data, translation_dict)
 
+    print("write out...")
     with open_output_stream(output) as of:
         of.write(bson.json_util.dumps(db_data))
-
 
 @begin.subcommand
 def export_mongodb(output, mdb, translation_words=None):
@@ -152,7 +208,7 @@ def export_mongodb(output, mdb, translation_words=None):
 
 
 @begin.subcommand
-def export_schema(output, mdb, translation_words=None):
+def export_schema(output=None, mdb=None, translation_words=None):
     """export schema by yaml
     """
     db = msaccess.MsAccessDb(mdb)
